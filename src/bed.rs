@@ -17,6 +17,16 @@ pub struct BedRecord {
     pub right_reverse: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct SimpleBedRecord {
+    pub contig: String,
+    pub start: u32,
+    pub end: u32,
+    pub intron_id: String,
+    pub gene: String,
+    pub presence: u8,
+}
+
 pub fn load_bed_file(path: &str) -> anyhow::Result<Vec<BedRecord>> {
     let mut reader = csv::ReaderBuilder::new()
         .delimiter(b'\t')
@@ -25,5 +35,16 @@ pub fn load_bed_file(path: &str) -> anyhow::Result<Vec<BedRecord>> {
 
     let records = reader.deserialize()
         .collect::<Result<Vec<BedRecord>, _>>()?;
+    Ok(records)
+}
+
+pub fn load_simple_bed_file(path: &str) -> anyhow::Result<Vec<SimpleBedRecord>> {
+    let mut reader = csv::ReaderBuilder::new()
+        .delimiter(b'\t')
+        .has_headers(true)
+        .from_path(path)?;
+
+    let records = reader.deserialize()
+        .collect::<Result<Vec<SimpleBedRecord>, _>>()?;
     Ok(records)
 }

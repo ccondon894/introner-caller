@@ -1,5 +1,5 @@
 use crate::{caller::Call, depth::CoverageStats};
-use crate::bed::BedRecord;
+use crate::bed::{BedRecord, SimpleBedRecord};
 use std::io::{BufWriter, Write};
 use std::fs::File;
 
@@ -54,11 +54,57 @@ pub fn write_results(results: &[OutputRow], path: &str) -> anyhow::Result<()> {
     let mut writer = BufWriter::new(file);
     writeln!(writer,"{}", header_line)?;
     for row in results {
-        writeln!(writer, 
+        writeln!(writer,
         "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
         row.chrom, row.start, row.end, row.sample, row.ortholog_id, row.sequence_id,
         row.family, row.gene, row.splice_site, row.orientation, row.left_reverse,
         row.right_reverse, row.depth_left, row.depth_introner, row.depth_right,
+        row.old_call, row.new_call)?;
+    }
+    Ok(())
+}
+
+#[derive(Debug)]
+pub struct SimpleOutputRow {
+    pub contig: String,
+    pub start: u32,
+    pub end: u32,
+    pub intron_id: String,
+    pub gene: String,
+    pub depth_left: f64,
+    pub depth_introner: f64,
+    pub depth_right: f64,
+    pub old_call: Call,
+    pub new_call: Call,
+}
+
+impl SimpleOutputRow {
+    pub fn new(record: &SimpleBedRecord, stats: &CoverageStats, new_call: Call) -> Self {
+        SimpleOutputRow {
+            contig: record.contig.clone(),
+            start: record.start,
+            end: record.end,
+            intron_id: record.intron_id.clone(),
+            gene: record.gene.clone(),
+            depth_left: stats.mean_depth_left,
+            depth_introner: stats.mean_depth_introner,
+            depth_right: stats.mean_depth_right,
+            old_call: Call::from(record.presence),
+            new_call,
+        }
+    }
+}
+
+pub fn write_simple_results(results: &[SimpleOutputRow], path: &str) -> anyhow::Result<()> {
+    let header_line = "contig\tstart\tend\tintron_id\tgene\tleft_mean_depth\tmean_middle_depth\tright_mean_depth\tcall\tnew_call";
+    let file = File::create(path)?;
+    let mut writer = BufWriter::new(file);
+    writeln!(writer, "{}", header_line)?;
+    for row in results {
+        writeln!(writer,
+        "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
+        row.contig, row.start, row.end, row.intron_id, row.gene,
+        row.depth_left, row.depth_introner, row.depth_right,
         row.old_call, row.new_call)?;
     }
     Ok(())

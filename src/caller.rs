@@ -49,12 +49,7 @@ impl From<u8> for Call {
     }
 }
 
-pub fn call_presence(bed_record: &BedRecord, depth_map: &DepthMap) -> CallResult {
-
-    let chrom = &bed_record.contig;
-    let start = bed_record.start;
-    let end = bed_record.end;
-
+pub fn call_presence_at(chrom: &str, start: u32, end: u32, depth_map: &DepthMap) -> CallResult {
     let stats: CoverageStats = match get_region_coverage(depth_map, chrom, start, end) {
         None => return CallResult { call: Call::Missing, stats: None },
         Some(s) => s,
@@ -68,7 +63,7 @@ pub fn call_presence(bed_record: &BedRecord, depth_map: &DepthMap) -> CallResult
     }
     if stats.mean_depth_introner < 10.0 {
         return CallResult {call: Call::Absent, stats: Some(stats)}
-    } 
+    }
     if !stats.has_continuous_junctions {
         return CallResult {call: Call::Absent, stats: Some(stats)}
     }
@@ -77,4 +72,8 @@ pub fn call_presence(bed_record: &BedRecord, depth_map: &DepthMap) -> CallResult
     }
 
     CallResult {call: Call::Present, stats: Some(stats)}
+}
+
+pub fn call_presence(bed_record: &BedRecord, depth_map: &DepthMap) -> CallResult {
+    call_presence_at(&bed_record.contig, bed_record.start, bed_record.end, depth_map)
 }
